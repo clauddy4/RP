@@ -14,7 +14,7 @@ namespace Valuator.Data.Repositories
             _redis = ConnectionMultiplexer.Connect(Localhost);
         }
 
-        public IEnumerable<string> GetAllFromDbByPrefix(string prefix)
+        public IEnumerable<string> GetKeysFromDbByPrefix(string prefix)
         {
              var server = _redis.GetServer(Localhost, Port);
              List<string> keys = new List<string>();

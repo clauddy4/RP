@@ -12,6 +12,7 @@ namespace Valuator.Pages
         private readonly ILogger<IndexModel> _logger;
         private readonly IRedisRepository _redisRepository;
         private const string TextPrefix = "TEXT-";
+
         public IndexModel(ILogger<IndexModel> logger, IRedisRepository redisRepository)
         {
             _logger = logger;
@@ -24,19 +25,16 @@ namespace Valuator.Pages
 
             string id = Guid.NewGuid().ToString();
 
-            string textKey = "TEXT-" + id;
-            //TODO: сохранить в БД text по ключу textKey
+            string textKey = TextPrefix + id;
             _redisRepository.SaveDataToDb(textKey, text);
 
             string rankKey = "RANK-" + id;
-            //TODO: посчитать rank и сохранить в БД по ключу rankKey
             var rank = GetRank(text);
             _redisRepository.SaveDataToDb(rankKey, rank.ToString());
 
             string similarityKey = "SIMILARITY-" + id;
             var similarity = GetSimilarity(text, id);
             _redisRepository.SaveDataToDb(similarityKey, similarity.ToString());
-            //TODO: посчитать similarity и сохранить в БД по ключу similarityKey
 
             return Redirect($"summary?id={id}");
         }
@@ -49,8 +47,8 @@ namespace Valuator.Pages
 
         private int GetSimilarity(string text, string id)
         {
-            var keys = _redisRepository.GetAllFromDbByPrefix(TextPrefix);
-            return keys.Any(key => key != "TEXT-" + id && _redisRepository.GetDataFromDbByKey(key) == text) ? 1 : 0;
+            var keys = _redisRepository.GetKeysFromDbByPrefix(TextPrefix);
+            return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key) == text) ? 1 : 0;
         }
     }
 }

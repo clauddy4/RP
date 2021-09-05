@@ -6,6 +6,6 @@ namespace Valuator.Data.Repositories
     {
         void SaveDataToDb(string key, string value);
         string GetDataFromDbByKey(string key);
-        IEnumerable<string> GetAllFromDbByPrefix(string prefix);
+        IEnumerable<string> GetKeysFromDbByPrefix(string prefix);
     }
 }
