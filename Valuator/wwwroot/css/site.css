@@ -69,3 +69,9 @@ body {
   white-space: nowrap;
   line-height: 60px; /* Vertically center the text there */
 }
+.select-container {
+    margin-bottom: 15px;
+}
+.select-container__label {
+    margin-right: 39px;
+}

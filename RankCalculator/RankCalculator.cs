@@ -4,8 +4,6 @@ using NATS.Client;
 using System;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RankCalculator
 {
@@ -29,19 +27,22 @@ namespace RankCalculator
                 string id = Encoding.UTF8.GetString(args.Message.Data);
                 string textKey = "TEXT-" + id;
 
-                if (!_redisRepository.IsKeyExistInDb(textKey))
+                if (!_redisRepository.IsKeyExistInDb(textKey, id))
                 {
                     _logger.LogWarning("Text key {textKey} doesn't exist", textKey);
                     return;
                 }
 
-                string text = _redisRepository.GetDataFromDbByKey(textKey);
+                string text = _redisRepository.GetDataFromDbByKey(textKey, id);
                 string rankKey = "RANK-" + id;
                 string rank = GetRank(text).ToString();
 
                 _logger.LogDebug("Rank {rank} with key {rankKey} by text id {id}", rank, rankKey, id);
 
-                _redisRepository.SaveDataToDb(rankKey, rank);
+                var segmentId = _redisRepository.GetSegmentIdFromDb(id);
+                _logger.LogDebug("LOOKUP: {textId}, {segmentId}", id, segmentId);
+
+                _redisRepository.SaveDataToDb(rankKey, rank, id);
 
                 CreateEventForRank(id, rank);
             });

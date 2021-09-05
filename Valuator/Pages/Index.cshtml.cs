@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using ClassLibrary;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -23,18 +21,21 @@ namespace Valuator.Pages
             _redisRepository = redisRepository;
         }
 
-        public IActionResult OnPost(string text)
+        public IActionResult OnPost(string text, string country)
         {
             _logger.LogDebug(text);
 
             string id = Guid.NewGuid().ToString();
+            var segmentId = GetSegmentId(country);
+            _redisRepository.SaveShardKey(id, segmentId);
+            _logger.LogDebug("LOOKUP: {id}, {segmentId}", id, segmentId);
 
             string textKey = TextPrefix + id;
-            _redisRepository.SaveDataToDb(textKey, text);
+            _redisRepository.SaveDataToDb(textKey, text, id);
 
             string similarityKey = "SIMILARITY-" + id;
-            var similarity = GetSimilarity(text, id);
-            _redisRepository.SaveDataToDb(similarityKey, similarity.ToString());
+            var similarity = GetSimilarity(text, id, segmentId);
+            _redisRepository.SaveDataToDb(similarityKey, similarity.ToString(), id);
 
             CreateEventForSimilarity(id, similarity);
 
@@ -43,10 +44,10 @@ namespace Valuator.Pages
             return Redirect($"summary?id={id}");
         }
 
-        private int GetSimilarity(string text, string id)
+        private int GetSimilarity(string text, string id, string segmentId)
         {
-            var keys = _redisRepository.GetKeysFromDbByPrefix(TextPrefix);
-            return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key) == text) ? 1 : 0;
+            var keys = _redisRepository.GetKeysFromDbByPrefix(TextPrefix, id, segmentId);
+            return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key, id) == text) ? 1 : 0;
         }
 
         private void CreateRankCalculator(string id)
@@ -74,6 +75,17 @@ namespace Valuator.Pages
                 connection.Drain();
                 connection.Close();
             }
+        }
+
+        private string GetSegmentId(string country)
+        {
+            return country switch
+            {
+                "Russia" => Constants.SegmentRus,
+                "France" or "Germany" => Constants.SegmentEu,
+                "USA" or "India" => Constants.SegmentOther,
+                _ => ""
+            };
         }
     }
 }

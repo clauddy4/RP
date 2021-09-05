@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using ClassLibrary;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
@@ -23,15 +24,22 @@ namespace Valuator.Pages
         {
             _logger.LogDebug(id);
 
-            Similarity = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("SIMILARITY-" + id));
+            Similarity = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("SIMILARITY-" + id, id));
+
+            var segmentId = _redisRepository.GetSegmentIdFromDb(id);
+            _logger.LogDebug("LOOKUP: {textId}, {segmentId}", id, segmentId);
 
             string rankKey = "RANK-" + id;
-            if (!_redisRepository.IsKeyExistInDb(rankKey))
+            for (int retryCount = 0; retryCount < 10; retryCount++)
             {
-                _logger.LogWarning("Rank key {rankKey} doesn't exist", rankKey);
-                return;
+                Thread.Sleep(100);
+                if (_redisRepository.IsKeyExistInDb(rankKey, id))
+                {
+                    Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey(rankKey, id));
+                    return;
+                }
             }
-            Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey(rankKey));
+            Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey(rankKey, id));
         }
     }
 }
