@@ -36,6 +36,8 @@ namespace Valuator.Pages
             var similarity = GetSimilarity(text, id);
             _redisRepository.SaveDataToDb(similarityKey, similarity.ToString());
 
+            await CreateEventForSimilarity(id, similarity);
+
             await CreateRankCalculator(id);
 
             return Redirect($"summary?id={id}");
@@ -57,6 +59,24 @@ namespace Valuator.Pages
                 {
                     byte[] data = Encoding.UTF8.GetBytes(id);
                     connection.Publish("valuator.processing.rank", data);
+                    await Task.Delay(1000);
+                }
+                connection.Drain();
+                connection.Close();
+            }
+        }
+
+        private async Task CreateEventForSimilarity(string id, int similarity)
+        {
+            string message = $"Event: SimilarityCalculated, context id: {id}, similarity: {similarity}";
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            using (var connection = connectionFactory.CreateConnection())
+            {
+                if (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(message);
+                    connection.Publish("valuator.processing.similarityCalculated", data);
                     await Task.Delay(1000);
                 }
                 connection.Drain();
