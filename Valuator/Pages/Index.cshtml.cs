@@ -47,7 +47,7 @@ namespace Valuator.Pages
         private int GetSimilarity(string text, string id, string segmentId)
         {
             var keys = _redisRepository.GetKeysFromDbByPrefix(TextPrefix, id, segmentId);
-            return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key, id) == text) ? 1 : 0;
+            return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromAllServers(key) == text) ? 1 : 0;
         }
 
         private void CreateRankCalculator(string id)

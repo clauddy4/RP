@@ -26,12 +26,14 @@ namespace ClassLibrary
 
         public IEnumerable<string> GetKeysFromDbByPrefix(string prefix, string shardKey, string segmentId)
         {
-            var port = DefinePort(segmentId);
-            var server = DefineConnection(shardKey).GetServer(Localhost, port);
+            var serverList = new List<IServer> { _redisRus.GetServer(Localhost, PortRus), _redisEu.GetServer(Localhost, PortEu), _redisOther.GetServer(Localhost, PortOther) };
             List<string> keys = new List<string>();
-            foreach (var key in server.Keys(pattern: prefix + "*"))
+            foreach (var server in serverList)
             {
-                keys.Add(key);
+                foreach (var key in server.Keys(pattern: prefix + "*"))
+                {
+                    keys.Add(key);
+                }
             }
             return keys;
         }
@@ -44,6 +46,19 @@ namespace ClassLibrary
                 return "";
             }
             return db.StringGet(key);
+        }
+
+        public string GetDataFromAllServers(string key)
+        {
+            var dbList = new List<IDatabase> { _redisRus.GetDatabase(), _redisEu.GetDatabase(), _redisOther.GetDatabase() };
+            foreach (var db in dbList)
+            {
+                if (db.KeyExists(key))
+                {
+                    return db.StringGet(key);
+                }
+            }
+            return "";
         }
 
         public void SaveDataToDb(string key, string value, string shardKey)
@@ -101,17 +116,6 @@ namespace ClassLibrary
                 return _redisOther;
             }
             return _redis;
-        }
-
-        private int DefinePort(string segmentId)
-        {
-            return segmentId switch
-            {
-                Constants.SegmentRus => PortRus,
-                Constants.SegmentEu => PortEu,
-                Constants.SegmentOther => PortOther,
-                _ => Port
-            };
         }
     }
 }

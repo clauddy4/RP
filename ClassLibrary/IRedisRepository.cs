@@ -10,5 +10,6 @@ namespace ClassLibrary
         bool IsKeyExistInDb(string key, string shardKey);
         string GetSegmentIdFromDb(string shardKey);
         void SaveShardKey(string key, string segmentId);
+        string GetDataFromAllServers(string key);
     }
 }
