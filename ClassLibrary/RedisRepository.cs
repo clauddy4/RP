@@ -10,23 +10,23 @@ namespace ClassLibrary
         private readonly IConnectionMultiplexer _redisRus;
         private readonly IConnectionMultiplexer _redisEu;
         private readonly IConnectionMultiplexer _redisOther;
-        private const int Port = 6379;
-        private const int PortRus = 6000;
-        private const int PortEu = 6001;
-        private const int PortOther = 6002;
+
+        private string envVariableRus = Environment.GetEnvironmentVariable($"DB_{Constants.SegmentRus}");
+        private string envVariableEu = Environment.GetEnvironmentVariable($"DB_{Constants.SegmentEu}");
+        private string envVariableOther = Environment.GetEnvironmentVariable($"DB_{Constants.SegmentOther}");
         private const string Localhost = "localhost";
 
         public RedisRepository()
         {
             _redis = ConnectionMultiplexer.Connect(Localhost);
-            _redisRus = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable($"DB_{Constants.SegmentRus}"));
-            _redisEu = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable($"DB_{Constants.SegmentEu}"));
-            _redisOther = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable($"DB_{Constants.SegmentOther}"));
+            _redisRus = ConnectionMultiplexer.Connect(envVariableRus);
+            _redisEu = ConnectionMultiplexer.Connect(envVariableEu);
+            _redisOther = ConnectionMultiplexer.Connect(envVariableOther);
         }
 
         public IEnumerable<string> GetKeysFromDbByPrefix(string prefix, string shardKey, string segmentId)
         {
-            var serverList = new List<IServer> { _redisRus.GetServer(Localhost, PortRus), _redisEu.GetServer(Localhost, PortEu), _redisOther.GetServer(Localhost, PortOther) };
+            var serverList = new List<IServer> { _redisRus.GetServer(envVariableRus), _redisEu.GetServer(envVariableEu), _redisOther.GetServer(envVariableOther) };
             List<string> keys = new List<string>();
             foreach (var server in serverList)
             {
