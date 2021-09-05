@@ -1,20 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Valuator.Data.Repositories;
 
 namespace Valuator.Pages
 {
     public class SummaryModel : PageModel
     {
         private readonly ILogger<SummaryModel> _logger;
+        private readonly IRedisRepository _redisRepository;
 
-        public SummaryModel(ILogger<SummaryModel> logger)
+        public SummaryModel(ILogger<SummaryModel> logger, IRedisRepository redisRepository)
         {
             _logger = logger;
+            _redisRepository = redisRepository;
         }
 
         public double Rank { get; set; }
@@ -23,8 +22,8 @@ namespace Valuator.Pages
         public void OnGet(string id)
         {
             _logger.LogDebug(id);
-
-            //TODO: проинициализировать свойства Rank и Similarity сохранёнными в БД значениями
+            Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("RANK-" + id));
+            Similarity = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("SIMILARITY-" + id));
         }
     }
 }
