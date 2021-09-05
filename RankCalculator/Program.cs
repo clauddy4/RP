@@ -1,16 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
-using Valuator.Data.Repositories;
+﻿using ClassLibrary;
+using Microsoft.Extensions.Logging;
 
 namespace RankCalculator
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             using (var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug)))
             {
-                var storage = new RedisRepository();
-                var rankCalculator = new RankCalculator(loggerFactory.CreateLogger<RankCalculator>(), storage);
+                var redisRepository = new RedisRepository();
+                var rankCalculator = new RankCalculator(loggerFactory.CreateLogger<RankCalculator>(), redisRepository);
                 rankCalculator.Run();
             }
         }

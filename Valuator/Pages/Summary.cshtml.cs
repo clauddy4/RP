@@ -1,7 +1,7 @@
 ﻿using System;
+using ClassLibrary;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using Valuator.Data.Repositories;
 
 namespace Valuator.Pages
 {

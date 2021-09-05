@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ClassLibrary;
+using Microsoft.Extensions.Logging;
 using NATS.Client;
 using System;
 using System.Linq;
 using System.Text;
-using Valuator.Data.Repositories;
 
 namespace RankCalculator
 {
