@@ -24,7 +24,7 @@ namespace RankCalculator
 
         public void Run()
         {
-            var subscription = _connection.SubscribeAsync("valuator.processing.rank", "rank_calculator", async (sender, args) =>
+            var subscription = _connection.SubscribeAsync("valuator.processing.rank", "rank_calculator", (sender, args) =>
             {
                 string id = Encoding.UTF8.GetString(args.Message.Data);
                 string textKey = "TEXT-" + id;
@@ -43,12 +43,11 @@ namespace RankCalculator
 
                 _redisRepository.SaveDataToDb(rankKey, rank);
 
-                await CreateEventForRank(id, rank);
+                CreateEventForRank(id, rank);
             });
 
             subscription.Start();
 
-            Console.WriteLine("Press Enter to exit");
             Console.ReadLine();
 
             subscription.Unsubscribe();
@@ -57,19 +56,15 @@ namespace RankCalculator
             _connection.Close();        
         }
 
-        private async Task CreateEventForRank(string id, string rank)
+        private void CreateEventForRank(string id, string rank)
         {
             string message = $"Event: RankCalculated, context id: {id}, rank: {rank}";
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             ConnectionFactory connectionFactory = new ConnectionFactory();
             using (var connection = connectionFactory.CreateConnection())
             {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    byte[] data = Encoding.UTF8.GetBytes(message);
-                    connection.Publish("rankCalculator.processing.rankCalculated", data);
-                    await Task.Delay(1000);
-                }
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                connection.Publish("rankCalculator.processing.rankCalculated", data);
+
                 connection.Drain();
                 connection.Close();
             }

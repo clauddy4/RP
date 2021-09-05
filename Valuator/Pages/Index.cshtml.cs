@@ -23,7 +23,7 @@ namespace Valuator.Pages
             _redisRepository = redisRepository;
         }
 
-        public async Task<IActionResult> OnPost(string text)
+        public IActionResult OnPost(string text)
         {
             _logger.LogDebug(text);
 
@@ -36,9 +36,9 @@ namespace Valuator.Pages
             var similarity = GetSimilarity(text, id);
             _redisRepository.SaveDataToDb(similarityKey, similarity.ToString());
 
-            await CreateEventForSimilarity(id, similarity);
+            CreateEventForSimilarity(id, similarity);
 
-            await CreateRankCalculator(id);
+            CreateRankCalculator(id);
 
             return Redirect($"summary?id={id}");
         }
@@ -49,36 +49,28 @@ namespace Valuator.Pages
             return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key) == text) ? 1 : 0;
         }
 
-        private async Task CreateRankCalculator(string id)
+        private void CreateRankCalculator(string id)
         {
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             ConnectionFactory connectionFactory = new ConnectionFactory();
             using (var connection = connectionFactory.CreateConnection())
             {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    byte[] data = Encoding.UTF8.GetBytes(id);
-                    connection.Publish("valuator.processing.rank", data);
-                    await Task.Delay(1000);
-                }
+                byte[] data = Encoding.UTF8.GetBytes(id);
+                connection.Publish("valuator.processing.rank", data);
+
                 connection.Drain();
                 connection.Close();
             }
         }
 
-        private async Task CreateEventForSimilarity(string id, int similarity)
+        private void CreateEventForSimilarity(string id, int similarity)
         {
             string message = $"Event: SimilarityCalculated, context id: {id}, similarity: {similarity}";
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             ConnectionFactory connectionFactory = new ConnectionFactory();
             using (var connection = connectionFactory.CreateConnection())
             {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    byte[] data = Encoding.UTF8.GetBytes(message);
-                    connection.Publish("valuator.processing.similarityCalculated", data);
-                    await Task.Delay(1000);
-                }
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                connection.Publish("valuator.processing.similarityCalculated", data);
+
                 connection.Drain();
                 connection.Close();
             }

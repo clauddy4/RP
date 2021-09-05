@@ -32,7 +32,6 @@ namespace EventsLogger
 
             subscription.Start();
 
-            Console.WriteLine("Press Enter to exit");
             Console.ReadLine();
 
             subscription.Unsubscribe();
