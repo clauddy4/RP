@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using NATS.Client;
 using Valuator.Data.Repositories;
 
 namespace Valuator.Pages
@@ -19,7 +23,7 @@ namespace Valuator.Pages
             _redisRepository = redisRepository;
         }
 
-        public IActionResult OnPost(string text)
+        public async Task<IActionResult> OnPost(string text)
         {
             _logger.LogDebug(text);
 
@@ -28,27 +32,36 @@ namespace Valuator.Pages
             string textKey = TextPrefix + id;
             _redisRepository.SaveDataToDb(textKey, text);
 
-            string rankKey = "RANK-" + id;
-            var rank = GetRank(text);
-            _redisRepository.SaveDataToDb(rankKey, rank.ToString());
-
             string similarityKey = "SIMILARITY-" + id;
             var similarity = GetSimilarity(text, id);
             _redisRepository.SaveDataToDb(similarityKey, similarity.ToString());
 
-            return Redirect($"summary?id={id}");
-        }
+            await CreateRankCalculator(id);
 
-        private static double GetRank(string text)
-        {
-            var notLetterCount = text.Count(ch => !char.IsLetter(ch));
-            return notLetterCount / (double)text.Length;
+            return Redirect($"summary?id={id}");
         }
 
         private int GetSimilarity(string text, string id)
         {
             var keys = _redisRepository.GetKeysFromDbByPrefix(TextPrefix);
             return keys.Any(key => key != TextPrefix + id && _redisRepository.GetDataFromDbByKey(key) == text) ? 1 : 0;
+        }
+
+        private async Task CreateRankCalculator(string id)
+        {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            using (var connection = connectionFactory.CreateConnection())
+            {
+                if (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(id);
+                    connection.Publish("valuator.processing.rank", data);
+                    await Task.Delay(1000);
+                }
+                connection.Drain();
+                connection.Close();
+            }
         }
     }
 }

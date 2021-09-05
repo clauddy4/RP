@@ -22,8 +22,16 @@ namespace Valuator.Pages
         public void OnGet(string id)
         {
             _logger.LogDebug(id);
-            Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("RANK-" + id));
+
             Similarity = Convert.ToDouble(_redisRepository.GetDataFromDbByKey("SIMILARITY-" + id));
+
+            string rankKey = "RANK-" + id;
+            if (!_redisRepository.IsKeyExistInDb(rankKey))
+            {
+                _logger.LogWarning("Rank key {rankKey} doesn't exist", rankKey);
+                return;
+            }
+            Rank = Convert.ToDouble(_redisRepository.GetDataFromDbByKey(rankKey));
         }
     }
 }

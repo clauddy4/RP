@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using System.Collections.Generic;
 
 namespace Valuator.Data.Repositories
@@ -35,6 +36,12 @@ namespace Valuator.Data.Repositories
         {
             var db = _redis.GetDatabase();
             db.StringSet(key, value);
+        }
+
+        public bool IsKeyExistInDb(string key)
+        {
+            var db = _redis.GetDatabase();
+            return db.KeyExists(key);
         }
     }
 }
